@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        /* Add your styles here */
+        .message-box { margin-bottom: 10px; }
+        .sender { color: blue; }
+        .receiver { color: green; }
+        #chatContainer { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h3>Chat with the Seller</h3>
+    <div id="chatContainer">
+        <!-- Chat messages will be displayed here -->
+    </div>
+
+    <textarea id="messageInput" placeholder="Type your message..."></textarea>
+    <button id="sendButton">Send</button>
+
+    <script>
+        // Get the receiver_id and property_id (this should be passed from the page dynamically)
+        const receiverId = 1; // For demonstration purposes, set to a valid receiver ID
+        const propertyId = 1; // Set to a valid property ID
+        const userId = <?php echo $_SESSION['user_id']; ?>;
+
+        // Function to fetch and display messages
+        function fetchMessages() {
+            fetch('chat.php?receiver_id=' + receiverId + '&property_id=' + propertyId)
+                .then(response => response.json())
+                .then(messages => {
+                    const chatContainer = document.getElementById('chatContainer');
+                    chatContainer.innerHTML = ''; // Clear the chat container before updating
+
+                    messages.forEach(message => {
+                        const messageElement = document.createElement('div');
+                        messageElement.classList.add('message-box');
+                        if (message.sender_id == userId) {
+                            messageElement.classList.add('sender');
+                        } else {
+                            messageElement.classList.add('receiver');
+                        }
+                        messageElement.textContent = message.message;
+                        chatContainer.appendChild(messageElement);
+                    });
+                    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
+                });
+        }
+
+        // Function to send a new message
+        document.getElementById('sendButton').addEventListener('click', function () {
+            const message = document.getElementById('messageInput').value;
+            if (message.trim() === '') {
+                alert('Please type a message!');
+                return;
+            }
+
+            fetch('chat.php', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    receiver_id: receiverId,
+                    property_id: propertyId,
+                    message: message
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('messageInput').value = ''; // Clear the input
+                        fetchMessages(); // Refresh the messages
+                    } else {
+                        alert('Error sending message.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Load messages when the page loads
+        fetchMessages();
+    </script>
+</body>
+</html>
